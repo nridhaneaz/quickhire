@@ -47,13 +47,13 @@ export default function Footer() {
             <p className="text-gray-400 text-sm mb-4">
               The latest job news, articles, sent to your inbox weekly.
             </p>
-            <div className="flex flex-col sm:flex-row gap-2">
-              <input 
-                type="email" 
+            <div className="flex flex-col gap-2">
+              <input
+                type="email"
                 placeholder="Email Address"
-                className="flex-1 px-4 py-2.5 rounded-sm bg-white text-gray-900 text-sm focus:outline-none focus:ring-2 focus:ring-[#4640DE]"
+                className="w-full px-4 py-2.5 rounded-sm bg-white text-gray-900 text-sm focus:outline-none focus:ring-2 focus:ring-[#4640DE]"
               />
-              <button className="bg-[#4640DE] text-white px-5 py-2.5 rounded-sm text-sm font-semibold hover:bg-[#3730A3] transition-colors whitespace-nowrap">
+              <button className="w-full bg-[#4640DE] text-white px-5 py-2.5 rounded-sm text-sm font-semibold hover:bg-[#3730A3] transition-colors">
                 Subscribe
               </button>
             </div>
