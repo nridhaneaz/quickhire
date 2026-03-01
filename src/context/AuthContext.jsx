@@ -1,34 +1,84 @@
-import { createContext, useContext, useState } from 'react';
+import { createContext, useContext, useState, useEffect } from 'react';
+import { authAPI } from '../lib/api';
 
 const AuthContext = createContext();
 
-// Admin credentials
-const ADMIN_EMAIL = 'admin@quickhire.com';
-const ADMIN_PASSWORD = 'admin123';
-
 export function AuthProvider({ children }) {
-  const [user, setUser] = useState(null); // { email, name, role: 'admin' | 'user' }
+  const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true);
 
-  const login = (email, password) => {
-    if (email === ADMIN_EMAIL && password === ADMIN_PASSWORD) {
-      const adminUser = { email, name: 'Admin', role: 'admin' };
-      setUser(adminUser);
-      return { success: true, role: 'admin' };
+  // App load হলে localStorage থেকে user restore করো
+  useEffect(() => {
+    const stored = localStorage.getItem('user');
+    const token = localStorage.getItem('accessToken');
+    if (stored && token) {
+      try {
+        const userData = JSON.parse(stored);
+        // Normalize user data (ensure name and role are consistent)
+        const normalized = {
+          ...userData,
+          name: userData.name || userData.email?.split('@')[0] || 'User',
+          role: userData.role === 'ADMIN' ? 'admin' : userData.role === 'USER' ? 'user' : userData.role,
+        };
+        setUser(normalized);
+      } catch (_) {
+        setUser(null);
+      }
     }
-    // Regular user login (any email/password for demo)
-    if (email && password.length >= 6) {
-      const regularUser = { email, name: email.split('@')[0], role: 'user' };
-      setUser(regularUser);
-      return { success: true, role: 'user' };
+    setLoading(false);
+  }, []);
+
+  const login = async (email, password) => {
+    const data = await authAPI.login(email, password);
+    const { user: userData, accessToken, refreshToken } = data.data;
+
+    // Normalize role first so we can reject admins
+    const role = userData.role === 'ADMIN' ? 'admin' : 'user';
+    if (role === 'admin') {
+      throw new Error('Admin accounts must log in via the Admin Portal.');
     }
-    return { success: false, error: 'Invalid credentials' };
+
+    localStorage.setItem('accessToken', accessToken);
+    if (refreshToken) localStorage.setItem('refreshToken', refreshToken);
+    localStorage.setItem('user', JSON.stringify(userData));
+
+    const normalized = {
+      ...userData,
+      role: 'user',
+      name: userData.name || email.split('@')[0],
+    };
+
+    setUser(normalized);
+    return { success: true, role: 'user' };
   };
 
-  const logout = () => setUser(null);
+  // Update local user state + localStorage (e.g. after avatar upload)
+  const updateUser = (patch) => {
+    setUser((prev) => {
+      const updated = { ...prev, ...patch };
+      localStorage.setItem('user', JSON.stringify(updated));
+      return updated;
+    });
+  };
+
+  const register = async (name, email, password) => {
+    await authAPI.register(name, email, password);
+    return { success: true };
+  };
+
+  const logout = async () => {
+    try {
+      await authAPI.logout();
+    } catch (_) {}
+    localStorage.removeItem('accessToken');
+    localStorage.removeItem('refreshToken');
+    localStorage.removeItem('user');
+    setUser(null);
+  };
 
   return (
-    <AuthContext.Provider value={{ user, login, logout }}>
-      {children}
+    <AuthContext.Provider value={{ user, login, register, logout, updateUser, loading }}>
+      {!loading && children}
     </AuthContext.Provider>
   );
 }

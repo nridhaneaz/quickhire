@@ -1,8 +1,13 @@
+import { useNavigate } from 'react-router-dom';
 import { useJobs } from '../context/JobContext';
-import { locations } from '../data/jobs';
 
 export default function Hero() {
-  const { searchTerm, setSearchTerm, selectedLocation, setSelectedLocation } = useJobs();
+  const navigate = useNavigate();
+  const { searchTerm, setSearchTerm, selectedLocation, setSelectedLocation, locations } = useJobs();
+
+  const handleSearch = () => {
+    navigate('/jobs');
+  };
 
   return (
     <section className="bg-white py-12 md:py-16 lg:py-20">
@@ -38,6 +43,7 @@ export default function Hero() {
                     placeholder="Job title or keyword"
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
+                    onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
                     className="flex-1 outline-none text-sm text-[#25324B] placeholder-gray-400"
                   />
                 </div>
@@ -56,7 +62,7 @@ export default function Hero() {
                     ))}
                   </select>
                 </div>
-                <button className="bg-[#4640DE] text-white px-6 py-3 rounded-sm text-sm font-semibold hover:bg-[#3730A3] transition-colors whitespace-nowrap">
+                <button onClick={handleSearch} className="bg-[#4640DE] text-white px-6 py-3 rounded-sm text-sm font-semibold hover:bg-[#3730A3] transition-colors whitespace-nowrap">
                   Search my job
                 </button>
               </div>
@@ -68,7 +74,10 @@ export default function Hero() {
               {['UI Designer', 'UX Researcher', 'Android', 'Admin'].map((tag) => (
                 <button 
                   key={tag}
-                  onClick={() => setSearchTerm(tag)}
+                  onClick={() => {
+                    setSearchTerm(tag);
+                    navigate('/jobs');
+                  }}
                   className="text-[#515B6F] text-sm hover:text-[#4640DE] transition-colors"
                 >
                   {tag},

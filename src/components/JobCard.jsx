@@ -18,9 +18,14 @@ export default function JobCard({ job, variant = "grid" }) {
       <Link to={`/job/${job.id}`} className="block">
         <div className="bg-white border border-gray-200 rounded-sm p-4 hover:border-[#4640DE] transition-colors">
           <div className="flex items-start gap-4">
-            <div className={`w-12 h-12 ${job.logoColor} rounded-lg flex items-center justify-center text-white font-bold text-lg shrink-0`}>
-              {job.logo}
-            </div>
+            {job.companyLogo ? (
+              <img src={job.companyLogo} alt={job.company}
+                className="w-12 h-12 rounded-lg object-contain border border-gray-100 shrink-0" />
+            ) : (
+              <div className={`w-12 h-12 ${job.logoColor} rounded-lg flex items-center justify-center text-white font-bold text-lg shrink-0`}>
+                {job.logo}
+              </div>
+            )}
             <div className="flex-1 min-w-0">
               <h3 className="font-semibold text-[#25324B] mb-1">{job.title}</h3>
               <p className="text-sm text-[#515B6F] mb-3">
@@ -50,9 +55,14 @@ export default function JobCard({ job, variant = "grid" }) {
     <Link to={`/job/${job.id}`} className="block">
       <div className="bg-white border border-gray-200 rounded-sm p-6 hover:border-[#4640DE] transition-colors h-full">
         <div className="flex items-start justify-between mb-4">
-          <div className={`w-12 h-12 ${job.logoColor} rounded-lg flex items-center justify-center text-white font-bold text-lg`}>
-            {job.logo}
-          </div>
+          {job.companyLogo ? (
+            <img src={job.companyLogo} alt={job.company}
+              className="w-12 h-12 rounded-lg object-contain border border-gray-100" />
+          ) : (
+            <div className={`w-12 h-12 ${job.logoColor} rounded-lg flex items-center justify-center text-white font-bold text-lg`}>
+              {job.logo}
+            </div>
+          )}
           <span className="px-3 py-1 border border-[#4640DE] text-[#4640DE] text-xs font-medium rounded-full">
             {job.type}
           </span>

@@ -13,7 +13,7 @@ export default function FeaturedJobs() {
           <h2 className="text-3xl md:text-4xl font-bold text-[#25324B]">
             Featured <span className="text-[#26A4FF]">jobs</span>
           </h2>
-          <Link to="/" className="text-[#4640DE] text-sm font-semibold flex items-center gap-2 hover:underline">
+          <Link to="/jobs" className="text-[#4640DE] text-sm font-semibold flex items-center gap-2 hover:underline">
             Show all jobs
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
