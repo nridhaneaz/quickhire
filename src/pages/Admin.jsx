@@ -359,6 +359,11 @@ export default function Admin() {
     }
   };
 
+  const handleDeleteJob = async (id, title) => {
+    if (!confirm(`Delete job "${title}"?`)) return;
+    await deleteJob(id);
+  };
+
   const handleLogout = async () => {
     await logout();
     navigate('/admin/login');
@@ -609,7 +614,7 @@ export default function Admin() {
                             className="text-[#4640DE] hover:text-[#3730A3] transition-colors text-sm font-medium">
                             Edit
                           </button>
-                          <button onClick={() => deleteJob(job.id)}
+                          <button onClick={() => handleDeleteJob(job.id, job.title)}
                             className="text-red-400 hover:text-red-600 transition-colors text-sm">
                             Delete
                           </button>
