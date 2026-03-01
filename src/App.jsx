@@ -2,6 +2,7 @@ import { BrowserRouter as Router, Routes, Route, useLocation, Navigate } from 'r
 import { JobProvider } from './context/JobContext';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { AdminAuthProvider, useAdminAuth } from './context/AdminAuthContext';
+import { ToastProvider } from './context/ToastContext';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
 import Home from './pages/Home';
@@ -55,15 +56,17 @@ function Layout() {
 
 function App() {
   return (
-    <AdminAuthProvider>
-      <AuthProvider>
-        <JobProvider>
-          <Router>
-            <Layout />
-          </Router>
-        </JobProvider>
-      </AuthProvider>
-    </AdminAuthProvider>
+    <ToastProvider>
+      <AdminAuthProvider>
+        <AuthProvider>
+          <JobProvider>
+            <Router>
+              <Layout />
+            </Router>
+          </JobProvider>
+        </AuthProvider>
+      </AdminAuthProvider>
+    </ToastProvider>
   );
 }
 

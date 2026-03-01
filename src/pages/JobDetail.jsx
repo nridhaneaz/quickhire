@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useJobs } from '../context/JobContext';
 import { useAuth } from '../context/AuthContext';
+import { useToast } from '../context/ToastContext';
 import { applicationsAPI } from '../lib/api';
 
 const categoryColors = {
@@ -14,6 +15,8 @@ const categoryColors = {
 
 export default function JobDetail() {
   const { id } = useParams();
+  const navigate = useNavigate();
+  const { addToast } = useToast();
   const { getJobById, getJobFromAPI, jobsLoading } = useJobs();
   const { user } = useAuth();
 
@@ -60,6 +63,16 @@ export default function JobDetail() {
       .split(/[._-]/)
       .map((p) => p.charAt(0).toUpperCase() + p.slice(1))
       .join(' ') || 'Applicant';
+
+  // Handle apply button click with login check
+  const handleApplyClick = () => {
+    if (!user) {
+      addToast('Please login or register to apply for jobs', 'warning', 4000);
+      navigate('/login', { state: { from: `/job/${id}` } });
+      return;
+    }
+    setShowApplyForm(true);
+  };
 
   if (isLoading) {
     return (
@@ -148,7 +161,7 @@ export default function JobDetail() {
                 Applied
               </button>
             ) : (
-              <button onClick={() => setShowApplyForm(true)}
+              <button onClick={handleApplyClick}
                 className="bg-[#4640DE] text-white px-8 py-3 rounded-sm text-sm font-semibold hover:bg-[#3730A3] transition-colors whitespace-nowrap">
                 Apply Now
               </button>
@@ -206,7 +219,7 @@ export default function JobDetail() {
                   Applied
                 </button>
               ) : (
-                <button onClick={() => setShowApplyForm(true)}
+                <button onClick={handleApplyClick}
                   className="w-full mt-6 bg-[#4640DE] text-white py-3 rounded-sm text-sm font-semibold hover:bg-[#3730A3] transition-colors">
                   Apply Now
                 </button>

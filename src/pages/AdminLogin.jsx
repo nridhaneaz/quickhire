@@ -1,13 +1,20 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAdminAuth } from '../context/AdminAuthContext';
 
 export default function AdminLogin() {
-  const { login } = useAdminAuth();
+  const { admin, login } = useAdminAuth();
   const navigate = useNavigate();
   const [formData, setFormData] = useState({ email: '', password: '' });
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+
+  // Redirect to dashboard if already authenticated
+  useEffect(() => {
+    if (admin && admin.role === 'admin') {
+      navigate('/admin', { replace: true });
+    }
+  }, [admin, navigate]);
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -21,7 +28,7 @@ export default function AdminLogin() {
     try {
       const result = await login(formData.email, formData.password);
       if (result.success && result.role === 'admin') {
-        navigate('/admin');
+        // Navigation will be handled by the useEffect above
       } else {
         // Logged in but not admin — reject access
         setError('Access denied. This portal is for administrators only.');
