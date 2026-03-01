@@ -841,6 +841,7 @@ export default function Admin() {
                       {/* Delete */}
                       <button
                         onClick={() => handleDeleteCategory(cat.id, cat.name)}
+                        disabled={cat.jobs > 0}
                         title={cat.jobs > 0 ? `Cannot delete — ${cat.jobs} job(s) linked` : 'Delete category'}
                         className={`transition-colors ${cat.jobs > 0 ? 'text-gray-300 cursor-not-allowed' : 'text-red-400 hover:text-red-600'}`}>
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
