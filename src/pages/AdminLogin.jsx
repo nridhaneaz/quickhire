@@ -27,7 +27,8 @@ export default function AdminLogin() {
     setError('');
     try {
       await login(formData.email, formData.password);
-      // Navigation will happen automatically via useEffect when admin state updates
+      // Use window.location for full page reload to ensure session restoration
+      window.location.href = '/admin';
     } catch (err) {
       setError(err.message || 'Invalid email or password');
       setIsLoading(false);

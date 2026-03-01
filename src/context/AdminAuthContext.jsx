@@ -89,13 +89,13 @@ export function AdminAuthProvider({ children }) {
           role: 'admin',
         };
         setAdmin(normalized);
-        updateActivity();
+        sessionStorage.setItem(LAST_ACTIVITY_KEY, Date.now().toString());
       } catch (_) {
         clearAdminSession();
       }
     }
     setLoading(false);
-  }, [clearAdminSession, updateActivity]);
+  }, [clearAdminSession]);
 
   const login = async (email, password) => {
     const data = await authAPI.login(email, password);
