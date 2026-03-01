@@ -1,10 +1,10 @@
 const BASE_URL = import.meta.env.VITE_API_URL || 'https://quick-hire-backend-zzw6.onrender.com/api/v1';
 
 // ─── Token helpers ─────────────────────────────────────────────────
-const getToken             = () => localStorage.getItem('accessToken');
-const getRefreshToken      = () => localStorage.getItem('refreshToken');
-const getAdminToken        = () => localStorage.getItem('adminAccessToken');
-const getAdminRefreshToken = () => localStorage.getItem('adminRefreshToken');
+const getToken             = () => sessionStorage.getItem('accessToken');
+const getRefreshToken      = () => sessionStorage.getItem('refreshToken');
+const getAdminToken        = () => sessionStorage.getItem('adminAccessToken');
+const getAdminRefreshToken = () => sessionStorage.getItem('adminRefreshToken');
 
 // ─── Internal: call refresh endpoint and rotate stored tokens ──────
 // Backend returns { accessToken, refreshToken } — both are updated (rotation).
@@ -16,8 +16,10 @@ const _doRefresh = async (refreshToken, accessKey, refreshKey) => {
   });
   const data = await res.json();
   if (!res.ok) throw new Error(data.message || 'Refresh failed');
-  localStorage.setItem(accessKey,  data.data.accessToken);
-  localStorage.setItem(refreshKey, data.data.refreshToken);
+  
+  // Use sessionStorage for both user and admin tokens
+  sessionStorage.setItem(accessKey,  data.data.accessToken);
+  sessionStorage.setItem(refreshKey, data.data.refreshToken);
   return data.data.accessToken;
 };
 
@@ -48,9 +50,10 @@ export const api = async (endpoint, options = {}) => {
       const newToken = await _doRefresh(getRefreshToken(), 'accessToken', 'refreshToken');
       res = await doFetch(newToken);
     } catch (_) {
-      localStorage.removeItem('accessToken');
-      localStorage.removeItem('refreshToken');
-      localStorage.removeItem('user');
+      sessionStorage.removeItem('accessToken');
+      sessionStorage.removeItem('refreshToken');
+      sessionStorage.removeItem('user');
+      sessionStorage.removeItem('userLastActivity');
       window.location.href = '/login';
       throw new Error('Session expired. Please log in again.');
     }
@@ -88,9 +91,10 @@ export const adminApi = async (endpoint, options = {}) => {
       const newToken = await _doRefresh(getAdminRefreshToken(), 'adminAccessToken', 'adminRefreshToken');
       res = await doFetch(newToken);
     } catch (_) {
-      localStorage.removeItem('adminAccessToken');
-      localStorage.removeItem('adminRefreshToken');
-      localStorage.removeItem('adminUser');
+      sessionStorage.removeItem('adminAccessToken');
+      sessionStorage.removeItem('adminRefreshToken');
+      sessionStorage.removeItem('adminUser');
+      sessionStorage.removeItem('adminLastActivity');
       window.location.href = '/admin/login';
       throw new Error('Admin session expired. Please log in again.');
     }
