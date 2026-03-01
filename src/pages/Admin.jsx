@@ -1131,53 +1131,6 @@ export default function Admin() {
                 </div>
               )}
             </div>
-
-            {/* Broadcast History */}
-            <div className="bg-white rounded-lg shadow-sm border border-gray-100">
-              <div className="p-6 border-b border-gray-100">
-                <h2 className="text-lg font-bold text-[#25324B]">Broadcast History</h2>
-                <p className="text-xs text-[#515B6F] mt-1">Recent broadcasts sent</p>
-              </div>
-              {broadcastsLoading ? (
-                <div className="flex justify-center py-12">
-                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#4640DE]"></div>
-                </div>
-              ) : (
-                <div className="overflow-x-auto">
-                  <table className="w-full">
-                    <thead className="bg-gray-50 border-b border-gray-100">
-                      <tr>
-                        {['Email', 'Subject', 'Sent Date', 'Actions'].map((h) => (
-                          <th key={h} className="px-6 py-3 text-left text-xs font-semibold text-[#515B6F] uppercase tracking-wider">
-                            {h}
-                          </th>
-                        ))}
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-gray-50">
-                      {broadcasts.map((bc) => (
-                        <tr key={bc._id} className="hover:bg-gray-50">
-                          <td className="px-6 py-4 text-sm text-[#515B6F]">{bc.email}</td>
-                          <td className="px-6 py-4 text-sm font-medium text-[#25324B]">{bc.subject}</td>
-                          <td className="px-6 py-4 text-sm text-[#515B6F]">
-                            {new Date(bc.createdAt).toLocaleDateString()}
-                          </td>
-                          <td className="px-6 py-4">
-                            <button onClick={() => handleDeleteBroadcast(bc._id)}
-                              className="text-xs font-semibold px-3 py-1.5 rounded-sm bg-red-50 text-red-600 hover:bg-red-100 transition-colors">
-                              Delete
-                            </button>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                  {broadcasts.length === 0 && (
-                    <div className="text-center py-12 text-[#515B6F] text-sm">No broadcasts found.</div>
-                  )}
-                </div>
-              )}
-            </div>
           </div>
         )}
       </div>
