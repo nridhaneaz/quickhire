@@ -1,4 +1,4 @@
-const BASE_URL = import.meta.env.VITE_API_URL || 'https://quick-hire-backend.onrender.com/api/v1';
+const BASE_URL = import.meta.env.VITE_API_URL || 'https://quick-hire-backend-zzw6.onrender.com/api/v1';
 
 // ─── Token helpers ─────────────────────────────────────────────────
 const getToken             = () => localStorage.getItem('accessToken');
