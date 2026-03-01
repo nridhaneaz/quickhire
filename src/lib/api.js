@@ -229,20 +229,34 @@ export const broadcastAPI = {
       method: 'POST',
       body: JSON.stringify({ email }),
     }),
+};
 
-  // Admin
-  getAllSubscribers: () => api('/broadcast/subscribe'),
+// ─── Admin Broadcast APIs (use adminApi / adminAccessToken) ───────
+export const adminBroadcastAPI = {
+  getAllSubscribers: (params = {}) => {
+    const query = new URLSearchParams(params).toString();
+    return adminApi(`/broadcast/subscribe${query ? '?' + query : ''}`);
+  },
+  getSubscriberById: (id) => adminApi(`/broadcast/subscribe/${id}`),
+  deleteSubscriber: (id) =>
+    adminApi(`/broadcast/subscribe/${id}`, { method: 'DELETE' }),
   sendToAll: (data) =>
-    api('/broadcast', {
+    adminApi('/broadcast', {
       method: 'POST',
       body: JSON.stringify(data),
     }),
   sendToSpecific: (data) =>
-    api('/broadcast/specific', {
+    adminApi('/broadcast/specific', {
       method: 'POST',
       body: JSON.stringify(data),
     }),
-  getAllBroadcasts: () => api('/broadcast'),
+  getAllBroadcasts: (params = {}) => {
+    const query = new URLSearchParams(params).toString();
+    return adminApi(`/broadcast${query ? '?' + query : ''}`);
+  },
+  getBroadcastById: (id) => adminApi(`/broadcast/${id}`),
+  deleteBroadcast: (id) =>
+    adminApi(`/broadcast/${id}`, { method: 'DELETE' }),
 };
 
 // ─── Users APIs (authenticated) ──────────────────────────────────

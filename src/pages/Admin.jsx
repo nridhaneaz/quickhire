@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAdminAuth } from '../context/AdminAuthContext';
 import { useJobs } from '../context/JobContext';
-import { adminApplicationsAPI, adminUsersAPI, jobsAPI } from '../lib/api';
+import { adminApplicationsAPI, adminUsersAPI, adminBroadcastAPI, jobsAPI } from '../lib/api';
 
 export default function Admin() {
   const { admin: user, logout } = useAdminAuth();
@@ -23,6 +23,20 @@ export default function Admin() {
   // ── Users ─────────────────────────────────────────────────────
   const [users, setUsers] = useState([]);
   const [usersLoading, setUsersLoading] = useState(false);
+
+  // ── Broadcast ─────────────────────────────────────────────────
+  const [subscribers, setSubscribers] = useState([]);
+  const [subscribersLoading, setSubscribersLoading] = useState(false);
+  const [broadcasts, setBroadcasts] = useState([]);
+  const [broadcastsLoading, setBroadcastsLoading] = useState(false);
+  const [showBroadcastForm, setShowBroadcastForm] = useState(false);
+  const [broadcastForm, setBroadcastForm] = useState({
+    subject: '',
+    html: '',
+    email: '',
+  });
+  const [broadcastMsg, setBroadcastMsg] = useState({ type: '', text: '' });
+  const [broadcastType, setBroadcastType] = useState('all'); // 'all' or 'specific'
 
   // ── New Job Form ─────────────────────────────────────────────
   const [showJobForm, setShowJobForm] = useState(false);
@@ -160,6 +174,10 @@ export default function Admin() {
   useEffect(() => {
     if (activeTab === 'applications') loadApplications();
     if (activeTab === 'users') loadUsers();
+    if (activeTab === 'broadcast') {
+      loadSubscribers();
+      loadBroadcasts();
+    }
   }, [activeTab]);
 
   // Load applications and users data on mount for stats
@@ -194,6 +212,78 @@ export default function Admin() {
       console.error(err);
     } finally {
       setAppsLoading(false);
+    }
+  };
+
+  const loadSubscribers = async () => {
+    setSubscribersLoading(true);
+    try {
+      const data = await adminBroadcastAPI.getAllSubscribers({ limit: 100 });
+      setSubscribers(data.data?.subscribers || []);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setSubscribersLoading(false);
+    }
+  };
+
+  const loadBroadcasts = async () => {
+    setBroadcastsLoading(true);
+    try {
+      const data = await adminBroadcastAPI.getAllBroadcasts({ limit: 50 });
+      setBroadcasts(data.data?.broadcasts || []);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setBroadcastsLoading(false);
+    }
+  };
+
+  const handleDeleteSubscriber = async (id) => {
+    if (!confirm('Delete this subscriber?')) return;
+    try {
+      await adminBroadcastAPI.deleteSubscriber(id);
+      await loadSubscribers();
+    } catch (err) {
+      alert(err.message);
+    }
+  };
+
+  const handleSendBroadcast = async (e) => {
+    e.preventDefault();
+    setBroadcastMsg({ type: '', text: '' });
+    
+    try {
+      if (broadcastType === 'all') {
+        const result = await adminBroadcastAPI.sendToAll({
+          subject: broadcastForm.subject,
+          html: broadcastForm.html,
+        });
+        setBroadcastMsg({ type: 'success', text: `Broadcast sent to ${result.data.sent} subscribers!` });
+      } else {
+        await adminBroadcastAPI.sendToSpecific({
+          email: broadcastForm.email,
+          subject: broadcastForm.subject,
+          html: broadcastForm.html,
+        });
+        setBroadcastMsg({ type: 'success', text: 'Broadcast sent successfully!' });
+      }
+      
+      setBroadcastForm({ subject: '', html: '', email: '' });
+      setShowBroadcastForm(false);
+      await loadBroadcasts();
+    } catch (err) {
+      setBroadcastMsg({ type: 'error', text: err.message });
+    }
+  };
+
+  const handleDeleteBroadcast = async (id) => {
+    if (!confirm('Delete this broadcast record?')) return;
+    try {
+      await adminBroadcastAPI.deleteBroadcast(id);
+      await loadBroadcasts();
+    } catch (err) {
+      alert(err.message);
     }
   };
 
@@ -328,6 +418,7 @@ export default function Admin() {
             { key: 'categories', label: 'Categories' },
             { key: 'applications', label: 'Applications' },
             { key: 'users', label: 'Users' },
+            { key: 'broadcast', label: 'Broadcast' },
           ].map(({ key, label }) => (
             <button key={key} onClick={() => setActiveTab(key)}
               className={`px-5 py-2 text-sm font-medium rounded-md transition-all ${
@@ -983,6 +1074,198 @@ export default function Admin() {
                 )}
               </div>
             )}
+          </div>
+        )}
+
+        {/* ── BROADCAST TAB ─────────────────────────────────────── */}
+        {activeTab === 'broadcast' && (
+          <div className="space-y-6">
+            {/* Send Broadcast Section */}
+            <div className="bg-white rounded-lg shadow-sm border border-gray-100">
+              <div className="flex items-center justify-between p-6 border-b border-gray-100">
+                <h2 className="text-lg font-bold text-[#25324B]">Send Broadcast Email</h2>
+                <button onClick={() => setShowBroadcastForm(!showBroadcastForm)}
+                  className="bg-[#4640DE] text-white px-4 py-2 rounded-sm text-sm font-semibold hover:bg-[#3730A3] transition-colors">
+                  {showBroadcastForm ? 'Cancel' : '+ New Broadcast'}
+                </button>
+              </div>
+
+              {showBroadcastForm && (
+                <div className="p-6 border-b border-gray-100 bg-gray-50">
+                  <form onSubmit={handleSendBroadcast} className="space-y-4">
+                    <div>
+                      <label className="block text-xs font-medium text-[#515B6F] mb-1">Broadcast Type</label>
+                      <div className="flex gap-4">
+                        <label className="flex items-center gap-2 cursor-pointer">
+                          <input
+                            type="radio"
+                            value="all"
+                            checked={broadcastType === 'all'}
+                            onChange={(e) => setBroadcastType(e.target.value)}
+                            className="text-[#4640DE] focus:ring-[#4640DE]"
+                          />
+                          <span className="text-sm text-[#25324B]">Send to All Subscribers</span>
+                        </label>
+                        <label className="flex items-center gap-2 cursor-pointer">
+                          <input
+                            type="radio"
+                            value="specific"
+                            checked={broadcastType === 'specific'}
+                            onChange={(e) => setBroadcastType(e.target.value)}
+                            className="text-[#4640DE] focus:ring-[#4640DE]"
+                          />
+                          <span className="text-sm text-[#25324B]">Send to Specific Email</span>
+                        </label>
+                      </div>
+                    </div>
+
+                    {broadcastType === 'specific' && (
+                      <div>
+                        <label className="block text-xs font-medium text-[#515B6F] mb-1">Email Address</label>
+                        <input
+                          type="email"
+                          value={broadcastForm.email}
+                          onChange={(e) => setBroadcastForm({ ...broadcastForm, email: e.target.value })}
+                          required
+                          className="w-full px-4 py-2 border border-gray-200 rounded-sm text-sm focus:outline-none focus:border-[#4640DE]"
+                          placeholder="recipient@example.com"
+                        />
+                      </div>
+                    )}
+
+                    <div>
+                      <label className="block text-xs font-medium text-[#515B6F] mb-1">Subject</label>
+                      <input
+                        type="text"
+                        value={broadcastForm.subject}
+                        onChange={(e) => setBroadcastForm({ ...broadcastForm, subject: e.target.value })}
+                        required
+                        className="w-full px-4 py-2 border border-gray-200 rounded-sm text-sm focus:outline-none focus:border-[#4640DE]"
+                        placeholder="Email subject"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-medium text-[#515B6F] mb-1">HTML Content</label>
+                      <textarea
+                        value={broadcastForm.html}
+                        onChange={(e) => setBroadcastForm({ ...broadcastForm, html: e.target.value })}
+                        required
+                        rows="6"
+                        className="w-full px-4 py-2 border border-gray-200 rounded-sm text-sm focus:outline-none focus:border-[#4640DE] font-mono"
+                        placeholder="<h1>Hello</h1><p>Email content here...</p>"
+                      />
+                    </div>
+
+                    {broadcastMsg.text && (
+                      <p className={`text-sm ${broadcastMsg.type === 'success' ? 'text-green-600' : 'text-red-500'}`}>
+                        {broadcastMsg.type === 'success' ? '✓ ' : '⚠ '}{broadcastMsg.text}
+                      </p>
+                    )}
+
+                    <div className="flex justify-end">
+                      <button type="submit"
+                        className="px-5 py-2 text-sm bg-[#4640DE] text-white rounded-sm font-semibold hover:bg-[#3730A3]">
+                        Send Broadcast
+                      </button>
+                    </div>
+                  </form>
+                </div>
+              )}
+            </div>
+
+            {/* Subscribers List */}
+            <div className="bg-white rounded-lg shadow-sm border border-gray-100">
+              <div className="p-6 border-b border-gray-100">
+                <h2 className="text-lg font-bold text-[#25324B]">All Subscribers</h2>
+                <p className="text-xs text-[#515B6F] mt-1">Total: {subscribers.length}</p>
+              </div>
+              {subscribersLoading ? (
+                <div className="flex justify-center py-12">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#4640DE]"></div>
+                </div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead className="bg-gray-50 border-b border-gray-100">
+                      <tr>
+                        {['Email', 'Subscribed Date', 'Actions'].map((h) => (
+                          <th key={h} className="px-6 py-3 text-left text-xs font-semibold text-[#515B6F] uppercase tracking-wider">
+                            {h}
+                          </th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-50">
+                      {subscribers.map((sub) => (
+                        <tr key={sub._id} className="hover:bg-gray-50">
+                          <td className="px-6 py-4 text-sm font-medium text-[#25324B]">{sub.email}</td>
+                          <td className="px-6 py-4 text-sm text-[#515B6F]">
+                            {new Date(sub.createdAt).toLocaleDateString()}
+                          </td>
+                          <td className="px-6 py-4">
+                            <button onClick={() => handleDeleteSubscriber(sub._id)}
+                              className="text-xs font-semibold px-3 py-1.5 rounded-sm bg-red-50 text-red-600 hover:bg-red-100 transition-colors">
+                              Delete
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                  {subscribers.length === 0 && (
+                    <div className="text-center py-12 text-[#515B6F] text-sm">No subscribers found.</div>
+                  )}
+                </div>
+              )}
+            </div>
+
+            {/* Broadcast History */}
+            <div className="bg-white rounded-lg shadow-sm border border-gray-100">
+              <div className="p-6 border-b border-gray-100">
+                <h2 className="text-lg font-bold text-[#25324B]">Broadcast History</h2>
+                <p className="text-xs text-[#515B6F] mt-1">Recent broadcasts sent</p>
+              </div>
+              {broadcastsLoading ? (
+                <div className="flex justify-center py-12">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#4640DE]"></div>
+                </div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead className="bg-gray-50 border-b border-gray-100">
+                      <tr>
+                        {['Email', 'Subject', 'Sent Date', 'Actions'].map((h) => (
+                          <th key={h} className="px-6 py-3 text-left text-xs font-semibold text-[#515B6F] uppercase tracking-wider">
+                            {h}
+                          </th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-50">
+                      {broadcasts.map((bc) => (
+                        <tr key={bc._id} className="hover:bg-gray-50">
+                          <td className="px-6 py-4 text-sm text-[#515B6F]">{bc.email}</td>
+                          <td className="px-6 py-4 text-sm font-medium text-[#25324B]">{bc.subject}</td>
+                          <td className="px-6 py-4 text-sm text-[#515B6F]">
+                            {new Date(bc.createdAt).toLocaleDateString()}
+                          </td>
+                          <td className="px-6 py-4">
+                            <button onClick={() => handleDeleteBroadcast(bc._id)}
+                              className="text-xs font-semibold px-3 py-1.5 rounded-sm bg-red-50 text-red-600 hover:bg-red-100 transition-colors">
+                              Delete
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                  {broadcasts.length === 0 && (
+                    <div className="text-center py-12 text-[#515B6F] text-sm">No broadcasts found.</div>
+                  )}
+                </div>
+              )}
+            </div>
           </div>
         )}
       </div>

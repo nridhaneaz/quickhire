@@ -1,6 +1,28 @@
 import { Link } from 'react-router-dom';
+import { useState } from 'react';
+import { broadcastAPI } from '../lib/api';
 
 export default function Footer() {
+  const [email, setEmail] = useState('');
+  const [message, setMessage] = useState({ type: '', text: '' });
+  const [loading, setLoading] = useState(false);
+
+  const handleSubscribe = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    setMessage({ type: '', text: '' });
+
+    try {
+      await broadcastAPI.subscribe(email);
+      setMessage({ type: 'success', text: 'Successfully subscribed!' });
+      setEmail('');
+    } catch (err) {
+      setMessage({ type: 'error', text: err.message });
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <footer className="bg-[#202430] text-white">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
@@ -47,16 +69,28 @@ export default function Footer() {
             <p className="text-gray-400 text-sm mb-4">
               The latest job news, articles, sent to your inbox weekly.
             </p>
-            <div className="flex flex-col gap-2">
+            <form onSubmit={handleSubscribe} className="flex flex-col gap-2">
               <input
                 type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
                 placeholder="Email Address"
-                className="w-full px-4 py-2.5 rounded-sm bg-white text-gray-900 text-sm focus:outline-none focus:ring-2 focus:ring-[#4640DE]"
+                required
+                disabled={loading}
+                className="w-full px-4 py-2.5 rounded-sm bg-white text-gray-900 text-sm focus:outline-none focus:ring-2 focus:ring-[#4640DE] disabled:opacity-60"
               />
-              <button className="w-full bg-[#4640DE] text-white px-5 py-2.5 rounded-sm text-sm font-semibold hover:bg-[#3730A3] transition-colors">
-                Subscribe
+              <button 
+                type="submit"
+                disabled={loading}
+                className="w-full bg-[#4640DE] text-white px-5 py-2.5 rounded-sm text-sm font-semibold hover:bg-[#3730A3] transition-colors disabled:opacity-60">
+                {loading ? 'Subscribing...' : 'Subscribe'}
               </button>
-            </div>
+              {message.text && (
+                <p className={`text-xs ${message.type === 'success' ? 'text-green-400' : 'text-red-400'}`}>
+                  {message.text}
+                </p>
+              )}
+            </form>
           </div>
         </div>
 
