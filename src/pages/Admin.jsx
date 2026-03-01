@@ -423,7 +423,7 @@ export default function Admin() {
             { key: 'categories', label: 'Categories' },
             { key: 'applications', label: 'Applications' },
             { key: 'users', label: 'Users' },
-            { key: 'broadcast', label: 'Broadcast' },
+            { key: 'broadcast', label: 'Subscribers' },
           ].map(({ key, label }) => (
             <button key={key} onClick={() => setActiveTab(key)}
               className={`px-5 py-2 text-sm font-medium rounded-md transition-all ${
@@ -1083,103 +1083,9 @@ export default function Admin() {
           </div>
         )}
 
-        {/* ── BROADCAST TAB ─────────────────────────────────────── */}
+        {/* ── SUBSCRIBERS TAB ─────────────────────────────────────── */}
         {activeTab === 'broadcast' && (
           <div className="space-y-6">
-            {/* Send Broadcast Section */}
-            <div className="bg-white rounded-lg shadow-sm border border-gray-100">
-              <div className="flex items-center justify-between p-6 border-b border-gray-100">
-                <h2 className="text-lg font-bold text-[#25324B]">Send Broadcast Email</h2>
-                <button onClick={() => setShowBroadcastForm(!showBroadcastForm)}
-                  className="bg-[#4640DE] text-white px-4 py-2 rounded-sm text-sm font-semibold hover:bg-[#3730A3] transition-colors">
-                  {showBroadcastForm ? 'Cancel' : '+ New Broadcast'}
-                </button>
-              </div>
-
-              {showBroadcastForm && (
-                <div className="p-6 border-b border-gray-100 bg-gray-50">
-                  <form onSubmit={handleSendBroadcast} className="space-y-4">
-                    <div>
-                      <label className="block text-xs font-medium text-[#515B6F] mb-1">Broadcast Type</label>
-                      <div className="flex gap-4">
-                        <label className="flex items-center gap-2 cursor-pointer">
-                          <input
-                            type="radio"
-                            value="all"
-                            checked={broadcastType === 'all'}
-                            onChange={(e) => setBroadcastType(e.target.value)}
-                            className="text-[#4640DE] focus:ring-[#4640DE]"
-                          />
-                          <span className="text-sm text-[#25324B]">Send to All Subscribers</span>
-                        </label>
-                        <label className="flex items-center gap-2 cursor-pointer">
-                          <input
-                            type="radio"
-                            value="specific"
-                            checked={broadcastType === 'specific'}
-                            onChange={(e) => setBroadcastType(e.target.value)}
-                            className="text-[#4640DE] focus:ring-[#4640DE]"
-                          />
-                          <span className="text-sm text-[#25324B]">Send to Specific Email</span>
-                        </label>
-                      </div>
-                    </div>
-
-                    {broadcastType === 'specific' && (
-                      <div>
-                        <label className="block text-xs font-medium text-[#515B6F] mb-1">Email Address</label>
-                        <input
-                          type="email"
-                          value={broadcastForm.email}
-                          onChange={(e) => setBroadcastForm({ ...broadcastForm, email: e.target.value })}
-                          required
-                          className="w-full px-4 py-2 border border-gray-200 rounded-sm text-sm focus:outline-none focus:border-[#4640DE]"
-                          placeholder="recipient@example.com"
-                        />
-                      </div>
-                    )}
-
-                    <div>
-                      <label className="block text-xs font-medium text-[#515B6F] mb-1">Subject</label>
-                      <input
-                        type="text"
-                        value={broadcastForm.subject}
-                        onChange={(e) => setBroadcastForm({ ...broadcastForm, subject: e.target.value })}
-                        required
-                        className="w-full px-4 py-2 border border-gray-200 rounded-sm text-sm focus:outline-none focus:border-[#4640DE]"
-                        placeholder="Email subject"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-xs font-medium text-[#515B6F] mb-1">HTML Content</label>
-                      <textarea
-                        value={broadcastForm.html}
-                        onChange={(e) => setBroadcastForm({ ...broadcastForm, html: e.target.value })}
-                        required
-                        rows="6"
-                        className="w-full px-4 py-2 border border-gray-200 rounded-sm text-sm focus:outline-none focus:border-[#4640DE] font-mono"
-                        placeholder="<h1>Hello</h1><p>Email content here...</p>"
-                      />
-                    </div>
-
-                    {broadcastMsg.text && (
-                      <p className={`text-sm ${broadcastMsg.type === 'success' ? 'text-green-600' : 'text-red-500'}`}>
-                        {broadcastMsg.type === 'success' ? '✓ ' : '⚠ '}{broadcastMsg.text}
-                      </p>
-                    )}
-
-                    <div className="flex justify-end">
-                      <button type="submit"
-                        className="px-5 py-2 text-sm bg-[#4640DE] text-white rounded-sm font-semibold hover:bg-[#3730A3]">
-                        Send Broadcast
-                      </button>
-                    </div>
-                  </form>
-                </div>
-              )}
-            </div>
-
             {/* Subscribers List */}
             <div className="bg-white rounded-lg shadow-sm border border-gray-100">
               <div className="p-6 border-b border-gray-100">
