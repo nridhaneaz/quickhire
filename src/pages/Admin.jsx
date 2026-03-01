@@ -2,11 +2,13 @@ import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAdminAuth } from '../context/AdminAuthContext';
 import { useJobs } from '../context/JobContext';
+import { useToast } from '../context/ToastContext';
 import { adminApplicationsAPI, adminUsersAPI, adminBroadcastAPI, jobsAPI } from '../lib/api';
 
 export default function Admin() {
   const { admin: user, logout } = useAdminAuth();
   const navigate = useNavigate();
+  const { addToast } = useToast();
   const {
     jobs, addJob, updateJob, deleteJob, toggleJobStatus,
     categories, addCategory, updateCategory, deleteCategory, toggleCategoryStatus,
@@ -112,9 +114,11 @@ export default function Admin() {
         status:           editForm.status,
       });
       setEditJobMsg({ type: 'success', text: 'Job updated!' });
+      addToast('Job updated successfully!', 'success');
       setTimeout(closeEditJob, 800);
     } catch (err) {
       setEditJobMsg({ type: 'error', text: err.message });
+      addToast(err.message || 'Failed to update job', 'error');
     } finally {
       setEditJobLoading(false);
     }
@@ -148,9 +152,11 @@ export default function Admin() {
     setEditCatLoading(false);
     if (result.success) {
       setEditCatMsg({ type: 'success', text: 'Category updated!' });
+      addToast('Category updated successfully!', 'success');
       setTimeout(closeEditCat, 800);
     } else {
       setEditCatMsg({ type: 'error', text: result.error });
+      addToast(result.error || 'Failed to update category', 'error');
     }
   };
   // ── View Application Modal ───────────────────────────────────
@@ -244,8 +250,9 @@ export default function Admin() {
     try {
       await adminBroadcastAPI.deleteSubscriber(id);
       await loadSubscribers();
+      addToast('Subscriber deleted successfully', 'success');
     } catch (err) {
-      alert(err.message);
+      addToast(err.message || 'Failed to delete subscriber', 'error');
     }
   };
 
@@ -260,6 +267,7 @@ export default function Admin() {
           html: broadcastForm.html,
         });
         setBroadcastMsg({ type: 'success', text: `Broadcast sent to ${result.data.sent} subscribers!` });
+        addToast(`Broadcast sent to ${result.data.sent} subscribers!`, 'success');
       } else {
         await adminBroadcastAPI.sendToSpecific({
           email: broadcastForm.email,
@@ -267,6 +275,7 @@ export default function Admin() {
           html: broadcastForm.html,
         });
         setBroadcastMsg({ type: 'success', text: 'Broadcast sent successfully!' });
+        addToast('Broadcast sent successfully!', 'success');
       }
       
       setBroadcastForm({ subject: '', html: '', email: '' });
@@ -274,6 +283,7 @@ export default function Admin() {
       await loadBroadcasts();
     } catch (err) {
       setBroadcastMsg({ type: 'error', text: err.message });
+      addToast(err.message || 'Failed to send broadcast', 'error');
     }
   };
 
@@ -282,8 +292,9 @@ export default function Admin() {
     try {
       await adminBroadcastAPI.deleteBroadcast(id);
       await loadBroadcasts();
+      addToast('Broadcast record deleted', 'success');
     } catch (err) {
-      alert(err.message);
+      addToast(err.message || 'Failed to delete broadcast', 'error');
     }
   };
 
@@ -293,7 +304,11 @@ export default function Admin() {
       setApplications((prev) =>
         prev.map((a) => (a._id === id ? { ...a, status } : a))
       );
-    } catch (err) { console.error(err); }
+      addToast(`Application status updated to ${status}`, 'success');
+    } catch (err) {
+      console.error(err);
+      addToast('Failed to update application status', 'error');
+    }
   };
 
   const handleDeleteApp = async (id) => {
@@ -301,7 +316,11 @@ export default function Admin() {
     try {
       await adminApplicationsAPI.delete(id);
       setApplications((prev) => prev.filter((a) => a._id !== id));
-    } catch (err) { console.error(err); }
+      addToast('Application deleted successfully', 'success');
+    } catch (err) {
+      console.error(err);
+      addToast('Failed to delete application', 'error');
+    }
   };
 
   // ── Job submit ────────────────────────────────────────────────
@@ -324,6 +343,7 @@ export default function Admin() {
         companyLogoFile:  jobLogoFile,
       });
       setJobMsg({ type: 'success', text: 'Job created successfully!' });
+      addToast('Job created successfully!', 'success');
       setJobForm({ title: '', company: '', location: '', jobType: 'Full Time', about: '', salary_min: '', salary_max: '', category: '', responsibilities: '', requirements: '', tags: '' });
       setJobLogoFile(null);
       const fi = document.getElementById('job-logo-input');
@@ -331,6 +351,7 @@ export default function Admin() {
       setShowJobForm(false);
     } catch (err) {
       setJobMsg({ type: 'error', text: err.message });
+      addToast(err.message || 'Failed to create job', 'error');
     }
   };
 
@@ -341,6 +362,7 @@ export default function Admin() {
     const result = await addCategory(newCatName, newCatImage);
     if (result.success) {
       setCatMsg({ type: 'success', text: `"${newCatName}" added!` });
+      addToast(`Category "${newCatName}" added successfully!`, 'success');
       setNewCatName('');
       setNewCatImage(null);
       // reset file input
@@ -348,20 +370,49 @@ export default function Admin() {
       if (fi) fi.value = '';
     } else {
       setCatMsg({ type: 'error', text: result.error });
+      addToast(result.error || 'Failed to add category', 'error');
     }
   };
 
   const handleDeleteCategory = async (id, name) => {
     if (!confirm(`Delete category "${name}"?`)) return;
     const result = await deleteCategory(id);
-    if (!result.success) {
+    if (result.success) {
+      addToast(`Category "${name}" deleted successfully`, 'success');
+    } else {
       setCatMsg({ type: 'error', text: result.error });
+      addToast(result.error || 'Failed to delete category', 'error');
     }
   };
 
   const handleDeleteJob = async (id, title) => {
     if (!confirm(`Delete job "${title}"?`)) return;
-    await deleteJob(id);
+    try {
+      await deleteJob(id);
+      addToast(`Job "${title}" deleted successfully`, 'success');
+    } catch (err) {
+      addToast('Failed to delete job', 'error');
+    }
+  };
+
+  const handleToggleJobStatus = async (id, currentStatus) => {
+    try {
+      await toggleJobStatus(id, currentStatus);
+      const newStatus = currentStatus === 'ACTIVE' ? 'INACTIVE' : 'ACTIVE';
+      addToast(`Job status changed to ${newStatus}`, 'success');
+    } catch (err) {
+      addToast('Failed to update job status', 'error');
+    }
+  };
+
+  const handleToggleCategoryStatus = async (id, isActive) => {
+    try {
+      await toggleCategoryStatus(id, isActive);
+      const newStatus = isActive ? 'Inactive' : 'Active';
+      addToast(`Category status changed to ${newStatus}`, 'success');
+    } catch (err) {
+      addToast('Failed to update category status', 'error');
+    }
   };
 
   const handleLogout = async () => {
@@ -598,7 +649,7 @@ export default function Admin() {
                       </td>
                       <td className="px-6 py-4">
                         <button
-                          onClick={() => toggleJobStatus(job.id, job.status)}
+                          onClick={() => handleToggleJobStatus(job.id, job.status)}
                           className={`px-2 py-1 text-xs font-medium rounded-full cursor-pointer transition-colors ${
                             job.status === 'ACTIVE' 
                               ? 'bg-green-50 text-green-600 hover:bg-green-100' 
@@ -822,7 +873,7 @@ export default function Admin() {
                       </span>
                       {/* Toggle status */}
                       <button
-                        onClick={() => toggleCategoryStatus(cat.id, cat.isActive)}
+                        onClick={() => handleToggleCategoryStatus(cat.id, cat.isActive)}
                         title={cat.isActive ? 'Deactivate category' : 'Activate category'}
                         className={`transition-colors ${
                           cat.isActive
