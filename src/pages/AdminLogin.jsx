@@ -26,17 +26,10 @@ export default function AdminLogin() {
     setIsLoading(true);
     setError('');
     try {
-      const result = await login(formData.email, formData.password);
-      if (result.success && result.role === 'admin') {
-        // Navigate immediately after successful login
-        navigate('/admin', { replace: true });
-      } else {
-        // Logged in but not admin — reject access
-        setError('Access denied. This portal is for administrators only.');
-      }
+      await login(formData.email, formData.password);
+      // Navigation will happen automatically via useEffect when admin state updates
     } catch (err) {
       setError(err.message || 'Invalid email or password');
-    } finally {
       setIsLoading(false);
     }
   };
