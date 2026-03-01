@@ -1,141 +1,88 @@
-import { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import { createContext, useContext, useState, useEffect } from 'react';
 import { authAPI } from '../lib/api';
 
-const AdminAuthContext = createContext();
+const AuthContext = createContext();
 
-// Use sessionStorage for admin auth (clears when tab closes)
-const ADMIN_TOKEN_KEY = 'adminAccessToken';
-const ADMIN_USER_KEY  = 'adminUser';
-const LAST_ACTIVITY_KEY = 'adminLastActivity';
-const INACTIVITY_TIMEOUT = 30 * 60 * 1000; // 30 minutes
-
-export function AdminAuthProvider({ children }) {
-  const [admin, setAdmin] = useState(null);
+export function AuthProvider({ children }) {
+  const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // Clear admin session
-  const clearAdminSession = useCallback(() => {
-    sessionStorage.removeItem(ADMIN_TOKEN_KEY);
-    sessionStorage.removeItem('adminRefreshToken');
-    sessionStorage.removeItem(ADMIN_USER_KEY);
-    sessionStorage.removeItem(LAST_ACTIVITY_KEY);
-    setAdmin(null);
-  }, []);
-
-  // Update last activity timestamp
-  const updateActivity = useCallback(() => {
-    if (admin) {
-      sessionStorage.setItem(LAST_ACTIVITY_KEY, Date.now().toString());
-    }
-  }, [admin]);
-
-  // Check for inactivity timeout
+  // App load হলে localStorage থেকে user restore করো
   useEffect(() => {
-    if (!admin) return;
-
-    const checkInactivity = () => {
-      const lastActivity = sessionStorage.getItem(LAST_ACTIVITY_KEY);
-      if (lastActivity) {
-        const elapsed = Date.now() - parseInt(lastActivity, 10);
-        if (elapsed > INACTIVITY_TIMEOUT) {
-          clearAdminSession();
-        }
-      }
-    };
-
-    // Check every minute
-    const interval = setInterval(checkInactivity, 60000);
-    return () => clearInterval(interval);
-  }, [admin, clearAdminSession]);
-
-  // Track user activity
-  useEffect(() => {
-    if (!admin) return;
-
-    const events = ['mousedown', 'keydown', 'scroll', 'touchstart'];
-    events.forEach(event => {
-      document.addEventListener(event, updateActivity);
-    });
-
-    return () => {
-      events.forEach(event => {
-        document.removeEventListener(event, updateActivity);
-      });
-    };
-  }, [admin, updateActivity]);
-
-  // Restore admin session on page load
-  useEffect(() => {
-    const stored = sessionStorage.getItem(ADMIN_USER_KEY);
-    const token  = sessionStorage.getItem(ADMIN_TOKEN_KEY);
-    const lastActivity = sessionStorage.getItem(LAST_ACTIVITY_KEY);
-
+    const stored = localStorage.getItem('user');
+    const token = localStorage.getItem('accessToken');
     if (stored && token) {
-      // Check if session expired due to inactivity
-      if (lastActivity) {
-        const elapsed = Date.now() - parseInt(lastActivity, 10);
-        if (elapsed > INACTIVITY_TIMEOUT) {
-          clearAdminSession();
-          setLoading(false);
-          return;
-        }
-      }
-
       try {
         const userData = JSON.parse(stored);
+        // Normalize user data (ensure name and role are consistent)
         const normalized = {
           ...userData,
-          name: userData.name || userData.email?.split('@')[0] || 'Admin',
-          role: 'admin',
+          name: userData.name || userData.email?.split('@')[0] || 'User',
+          role: userData.role === 'ADMIN' ? 'admin' : userData.role === 'USER' ? 'user' : userData.role,
         };
-        setAdmin(normalized);
-        updateActivity();
+        setUser(normalized);
       } catch (_) {
-        clearAdminSession();
+        setUser(null);
       }
     }
     setLoading(false);
-  }, [clearAdminSession, updateActivity]);
+  }, []);
 
   const login = async (email, password) => {
     const data = await authAPI.login(email, password);
-    const { user: userData, accessToken } = data.data;
+    const { user: userData, accessToken, refreshToken } = data.data;
+
+    // Normalize role first so we can reject admins
+    const role = userData.role === 'ADMIN' ? 'admin' : 'user';
+    if (role === 'admin') {
+      throw new Error('Admin accounts must log in via the Admin Portal.');
+    }
+
+    localStorage.setItem('accessToken', accessToken);
+    if (refreshToken) localStorage.setItem('refreshToken', refreshToken);
+    localStorage.setItem('user', JSON.stringify(userData));
 
     const normalized = {
       ...userData,
-      role: userData.role === 'ADMIN' ? 'admin' : userData.role?.toLowerCase(),
+      role: 'user',
       name: userData.name || email.split('@')[0],
     };
 
-    if (normalized.role !== 'admin') {
-      throw new Error('Access denied. This portal is for administrators only.');
-    }
+    setUser(normalized);
+    return { success: true, role: 'user' };
+  };
 
-    // Store in sessionStorage (clears when tab closes)
-    sessionStorage.setItem(ADMIN_TOKEN_KEY, accessToken);
-    if (data.data.refreshToken) sessionStorage.setItem('adminRefreshToken', data.data.refreshToken);
-    sessionStorage.setItem(ADMIN_USER_KEY, JSON.stringify(normalized));
-    sessionStorage.setItem(LAST_ACTIVITY_KEY, Date.now().toString());
+  // Update local user state + localStorage (e.g. after avatar upload)
+  const updateUser = (patch) => {
+    setUser((prev) => {
+      const updated = { ...prev, ...patch };
+      localStorage.setItem('user', JSON.stringify(updated));
+      return updated;
+    });
+  };
 
-    setAdmin(normalized);
-    return { success: true, role: 'admin' };
+  const register = async (name, email, password) => {
+    await authAPI.register(name, email, password);
+    return { success: true };
   };
 
   const logout = async () => {
     try {
-      // Call backend logout using the admin token
-      await authAPI.logoutWithToken(sessionStorage.getItem(ADMIN_TOKEN_KEY));
+      await authAPI.logout();
     } catch (_) {}
-    clearAdminSession();
+    localStorage.removeItem('accessToken');
+    localStorage.removeItem('refreshToken');
+    localStorage.removeItem('user');
+    setUser(null);
   };
 
   return (
-    <AdminAuthContext.Provider value={{ admin, login, logout, loading }}>
+    <AuthContext.Provider value={{ user, login, register, logout, updateUser, loading }}>
       {!loading && children}
-    </AdminAuthContext.Provider>
+    </AuthContext.Provider>
   );
 }
 
-export function useAdminAuth() {
-  return useContext(AdminAuthContext);
+export function useAuth() {
+  return useContext(AuthContext);
 }
